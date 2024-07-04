@@ -30,7 +30,18 @@
 #define SERVICE_UUID "4fafc201-1fb5-459e-8fcc-c5c9c331914b"
 #define CHARACTERISTIC_UUID "beb5483e-36e1-4688-b7f5-ea07361b26a8"
 
+// global variables
 Audio audio;
+
+BLECharacteristic *pCharacteristic = NULL;
+
+int wait_duration = 5000;
+
+int count = 0;
+
+int playing = true;
+
+int last_play_time = millis();
 
 // ble callbacks
 class MyCallbacks : public BLECharacteristicCallbacks
@@ -41,20 +52,32 @@ class MyCallbacks : public BLECharacteristicCallbacks
 
     rxValue = rxValue.c_str();
 
-    if (rxValue == "B")
+    if (rxValue == "U")
     {
-      audio.connecttoFS(SD, "/bark.wav");
+      wait_duration += 1000;
+      Serial.print("Duration: ");
+      Serial.println(wait_duration);
     }
-    else if (rxValue == "G")
+    else if (rxValue == "D")
     {
-      audio.connecttoFS(SD, "/gun.wav");
+      wait_duration -= 1000;
+      Serial.print("Duration: ");
+      Serial.println(wait_duration);
+    }
+    if (rxValue == "O")
+    {
+      wait_duration += 1000;
+      Serial.print("On");
+      playing = true;
+    }
+    else if (rxValue == "X")
+    {
+      wait_duration -= 1000;
+      Serial.print("Off");
+      playing = false;
     }
   }
 };
-
-BLECharacteristic *pCharacteristic = NULL;
-
-int value = 0;
 
 void setup()
 {
@@ -105,4 +128,10 @@ void setup()
 void loop()
 {
   audio.loop();
+
+  if (millis() - last_play_time > wait_duration && playing)
+  {
+    last_play_time = millis();
+    audio.connecttoFS(SD, "/bark.wav");
+  }
 }
